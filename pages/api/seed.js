@@ -2,7 +2,7 @@ import { Redis } from '@upstash/redis';
 import { v4 as uuid } from 'uuid';
 
 const SEED_DRIVERS = [
-  // ── DETROIT ────────────────────────────────────────────────────────────
+  // ── DETROIT ───────────────────────────────────────────────────────────────
   { name:"Big Tone", car:"2008 Chevy Impala", phone:"313-555-0101", cashapp:"BigToneDetroit", price:6, lat:42.3314, lng:-83.0458, tags:["no questions","cash only","late nights"], hood:"East Detroit" },
   { name:"Dre", car:"2011 Dodge Charger", phone:"313-555-0102", cashapp:"DreWheelz", price:7, lat:42.3523, lng:-83.0694, tags:["fast","music loud","Cash App ok"], hood:"North End" },
   { name:"Keisha B", car:"2015 Nissan Altima", phone:"313-555-0103", cashapp:"KeishaRidez", price:6, lat:42.3184, lng:-83.2314, tags:["safe driver","kids ok","AC works"], hood:"Westside" },
@@ -13,7 +13,7 @@ const SEED_DRIVERS = [
   { name:"Q", car:"2012 Ford Fusion", phone:"313-555-0108", cashapp:"QMoney313", price:6, lat:42.3631, lng:-82.9981, tags:["fast","music loud","Cash App ok"], hood:"East English Village" },
   { name:"Mama T", car:"2014 Dodge Caravan", phone:"313-555-0109", cashapp:"MamaTrides", price:8, lat:42.3201, lng:-83.2891, tags:["kids ok","safe driver","long trips ok"], hood:"Dearborn" },
   { name:"Rico", car:"2010 Chevy Tahoe", phone:"313-555-0110", cashapp:"RicoDetroit", price:9, lat:42.4312, lng:-83.1456, tags:["big car","groups ok","cash only"], hood:"Ferndale" },
-  // ── TOLEDO ─────────────────────────────────────────────────────────────
+  // ── TOLEDO ────────────────────────────────────────────────────────────────
   { name:"Big Moe", car:"2009 Chevy Impala", phone:"419-555-0201", cashapp:"BigMoeToledo", price:5, lat:41.6639, lng:-83.5552, tags:["cash only","late nights","no questions"], hood:"North Toledo" },
   { name:"Tasha", car:"2013 Nissan Sentra", phone:"419-555-0202", cashapp:"TashaWheelz", price:6, lat:41.6753, lng:-83.5801, tags:["safe driver","AC works","kids ok"], hood:"Old West End" },
   { name:"D-Loc", car:"2007 Ford Taurus", phone:"419-555-0203", cashapp:"", price:5, lat:41.6521, lng:-83.5234, tags:["cash only","no questions","cheap"], hood:"East Toledo" },
@@ -24,11 +24,16 @@ const SEED_DRIVERS = [
 ];
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
-  
-  // Simple auth check
-  if (req.headers['x-seed-key'] !== process.env.SEED_KEY && req.body?.key !== process.env.SEED_KEY) {
-    return res.status(401).json({ error: 'Unauthorized' });
+  // Accept GET or POST — key in query string or body
+  const key = req.query.key || req.body?.key;
+
+  if (key !== process.env.SEED_KEY) {
+    return res.status(401).send(`
+      <html><body style="background:#0A0906;color:#F2EDE4;font-family:monospace;padding:40px;text-align:center">
+        <h1 style="color:#E8622A;font-size:48px">NOPE</h1>
+        <p>Wrong key. Try: /api/seed?key=YOUR_SEED_KEY</p>
+      </body></html>
+    `);
   }
 
   const redis = new Redis({
@@ -37,30 +42,31 @@ export default async function handler(req, res) {
   });
 
   const seeded = [];
-
   for (const d of SEED_DRIVERS) {
     const id = uuid();
     const driver = {
-      id,
-      name: d.name,
-      car: d.car,
-      phone: d.phone,
-      cashapp: d.cashapp,
-      price: d.price,
-      lat: d.lat,
-      lng: d.lng,
-      tags: d.tags,
-      hood: d.hood,
+      id, name:d.name, car:d.car, phone:d.phone, cashapp:d.cashapp,
+      price:d.price, lat:d.lat, lng:d.lng, tags:d.tags, hood:d.hood,
       rating: parseFloat((4.3 + Math.random() * 0.7).toFixed(1)),
       trips: Math.floor(50 + Math.random() * 400),
-      online: true,
-      createdAt: Date.now(),
-      lastSeen: Date.now(),
+      online: true, createdAt: Date.now(), lastSeen: Date.now(),
     };
     await redis.set(`driver:${id}`, JSON.stringify(driver));
     await redis.sadd('drivers:all', id);
-    seeded.push(driver.name + ' — ' + (d.hood || ''));
+    seeded.push(driver.name);
   }
 
-  res.status(200).json({ success: true, seeded: seeded.length, drivers: seeded });
+  return res.send(`
+    <html><body style="background:#0A0906;color:#F2EDE4;font-family:monospace;padding:40px;text-align:center;max-width:400px;margin:0 auto">
+      <div style="color:#E8622A;font-size:48px;margin-bottom:16px">✓</div>
+      <h1 style="font-size:28px;letter-spacing:0.1em;margin-bottom:24px">FIENDS SEEDED</h1>
+      <p style="color:#C8C2B8;font-size:12px;margin-bottom:24px">${seeded.length} drivers added to Detroit + Toledo</p>
+      <div style="text-align:left;border-top:1px solid rgba(242,237,228,0.1);padding-top:16px">
+        ${seeded.map(n => `<div style="padding:6px 0;border-bottom:1px solid rgba(242,237,228,0.06);font-size:12px;color:#C8C2B8">✓ ${n}</div>`).join('')}
+      </div>
+      <a href="/" style="display:block;margin-top:24px;padding:16px;background:#E8622A;color:#0A0906;text-decoration:none;font-size:18px;letter-spacing:0.1em;border-radius:2px">
+        OPEN FINDAFIEND →
+      </a>
+    </body></html>
+  `);
 }
