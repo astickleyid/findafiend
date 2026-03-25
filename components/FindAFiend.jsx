@@ -20,6 +20,7 @@ const S = `
   .splash-title span{color:var(--ember)}
   .splash-tld{font-family:"Space Mono",monospace;font-size:13px;color:var(--cream2);letter-spacing:0.15em;margin-top:8px;position:relative;z-index:1}
   .splash-tagline{font-size:14px;color:var(--cream2);margin-top:24px;max-width:260px;line-height:1.6;position:relative;z-index:1;font-weight:300}
+  .splash-city{font-family:"Bebas Neue",sans-serif;font-size:18px;color:var(--ember);letter-spacing:0.15em;margin-top:16px;position:relative;z-index:1}
   .splash-stats{display:flex;border-top:1px solid rgba(242,237,228,0.1);border-bottom:1px solid rgba(242,237,228,0.1)}
   .splash-stat{flex:1;padding:20px 16px;text-align:center;border-right:1px solid rgba(242,237,228,0.1)}
   .splash-stat:last-child{border-right:none}
@@ -78,6 +79,7 @@ const S = `
   .driver-offline-label{font-family:"Space Mono",monospace;font-size:10px;color:var(--cream2);letter-spacing:0.1em;border:1px solid rgba(242,237,228,0.1);padding:6px 14px;border-radius:1px}
   .online-badge{width:8px;height:8px;background:#27AE60;border-radius:50%;border:2px solid var(--bg2);position:absolute;bottom:-2px;right:-2px;box-shadow:0 0 6px #27AE60}
   .stars{color:#F39C12;font-size:11px;letter-spacing:1px}
+  .stars-lg{color:#F39C12;font-size:28px;letter-spacing:4px;cursor:pointer}
   .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:200;display:flex;align-items:flex-end;animation:fadeIn 0.2s ease;backdrop-filter:blur(4px)}
   .modal{width:100%;max-width:430px;margin:0 auto;background:var(--bg2);border-top:1px solid rgba(242,237,228,0.1);border-radius:4px 4px 0 0;padding:24px;animation:slideUp 0.3s ease;max-height:90vh;overflow-y:auto}
   .modal-handle{width:36px;height:3px;background:rgba(242,237,228,0.1);border-radius:2px;margin:0 auto 24px}
@@ -99,7 +101,6 @@ const S = `
   .status-badge{display:inline-flex;align-items:center;gap:6px;font-family:"Space Mono",monospace;font-size:10px;padding:6px 12px;border-radius:1px;letter-spacing:0.08em}
   .status-pending{background:rgba(243,156,18,0.12);color:#F39C12;border:1px solid rgba(243,156,18,0.3)}
   .status-accepted{background:rgba(39,174,96,0.12);color:#27AE60;border:1px solid rgba(39,174,96,0.3)}
-  .status-en_route{background:rgba(52,152,219,0.12);color:#3498DB;border:1px solid rgba(52,152,219,0.3)}
   .status-blink{animation:blink 1s infinite}
   .confirm-screen{min-height:100vh;display:flex;flex-direction:column;animation:fadeIn 0.3s ease}
   .confirm-body{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 20px;text-align:center}
@@ -119,6 +120,16 @@ const S = `
   .cashapp-btn{width:100%;padding:16px;background:#00D54B;border:none;border-radius:2px;color:#000;font-family:"Bebas Neue",sans-serif;font-size:18px;letter-spacing:0.1em;cursor:pointer;margin-top:12px;transition:background 0.15s}
   .cashapp-btn:hover{background:#00f059}
   .phone-btn{width:100%;padding:14px;background:transparent;border:1px solid rgba(39,174,96,0.4);border-radius:2px;color:#27AE60;font-family:"Bebas Neue",sans-serif;font-size:18px;letter-spacing:0.1em;cursor:pointer;margin-top:8px;transition:all 0.15s;text-decoration:none;display:block;text-align:center}
+  .rating-card{width:100%;background:var(--bg2);border:1px solid rgba(243,156,18,0.3);border-radius:2px;padding:20px;margin:16px 0;text-align:center}
+  .rating-title{font-family:"Bebas Neue",sans-serif;font-size:20px;letter-spacing:0.08em;margin-bottom:16px;color:var(--cream)}
+  .rating-stars{display:flex;justify-content:center;gap:8px;margin-bottom:16px}
+  .rating-star{font-size:36px;cursor:pointer;transition:transform 0.1s;line-height:1}
+  .rating-star:hover{transform:scale(1.2)}
+  .rating-star.lit{filter:none}
+  .rating-star.dim{opacity:0.3}
+  .share-bar{display:flex;gap:8px;padding:0 20px 16px}
+  .share-btn{flex:1;padding:12px;background:transparent;border:1px solid rgba(242,237,228,0.1);border-radius:2px;color:var(--cream2);font-family:"Space Mono",monospace;font-size:10px;letter-spacing:0.06em;cursor:pointer;transition:all 0.15s;text-align:center}
+  .share-btn:hover{border-color:var(--ember);color:var(--ember)}
   .driver-status-bar{padding:20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(242,237,228,0.1)}
   .toggle-track{width:52px;height:28px;border-radius:14px;background:var(--bg3);border:1px solid rgba(242,237,228,0.1);position:relative;transition:background 0.2s;cursor:pointer}
   .toggle-track.on{background:var(--ember);border-color:var(--ember)}
@@ -160,13 +171,68 @@ const S = `
 const COLORS = ["#C0392B","#2980B9","#8E44AD","#16A085","#E67E22","#2C3E50","#D35400","#1ABC9C","#884EA0","#2ECC71"];
 const TAGS = ["AC works","no questions","cash only","Cash App ok","Venmo ok","aux cord","cold water","kids ok","fast driver","late nights","safe driver","music loud","long trips ok"];
 
+// City detection by GPS
+function detectCity(lat, lng) {
+  if (!lat || !lng) return null;
+  // Detroit metro: ~42.33, -83.05
+  if (lat > 42.0 && lat < 42.7 && lng > -83.8 && lng < -82.7) return "detroit";
+  // Toledo: ~41.66, -83.56
+  if (lat > 41.4 && lat < 42.0 && lng > -84.0 && lng < -83.2) return "toledo";
+  return null;
+}
+
 function Stars({ r }) {
   const f = Math.floor(r);
   return <span className="stars">{"★".repeat(f)}{"☆".repeat(5-f)}</span>;
 }
 
+function RatingWidget({ rideId, driverName, onDone }) {
+  const [hover, setHover] = useState(0);
+  const [selected, setSelected] = useState(0);
+  const [done, setDone] = useState(false);
+
+  const submit = async (stars) => {
+    setSelected(stars);
+    try {
+      await fetch("/api/drivers/rate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rideId, rating: stars }),
+      });
+    } catch {}
+    setDone(true);
+    setTimeout(onDone, 1500);
+  };
+
+  if (done) return (
+    <div className="rating-card">
+      <div style={{fontSize:32,marginBottom:8}}>⭐</div>
+      <div className="rating-title">THANKS FOR THE RATING</div>
+      <div style={{fontFamily:"Space Mono",fontSize:10,color:"var(--cream2)",letterSpacing:"0.06em"}}>Helps keep fiends accountable</div>
+    </div>
+  );
+
+  return (
+    <div className="rating-card">
+      <div className="rating-title">RATE {driverName.toUpperCase()}</div>
+      <div className="rating-stars">
+        {[1,2,3,4,5].map(n => (
+          <div key={n} className="rating-star"
+            onMouseEnter={() => setHover(n)}
+            onMouseLeave={() => setHover(0)}
+            onClick={() => submit(n)}
+            style={{opacity: (hover||selected) >= n ? 1 : 0.25}}>
+            ⭐
+          </div>
+        ))}
+      </div>
+      <div style={{fontFamily:"Space Mono",fontSize:9,color:"var(--cream2)",letterSpacing:"0.06em"}}>TAP TO RATE · HELPS OTHER RIDERS</div>
+    </div>
+  );
+}
+
 function StatusBadge({ status }) {
-  const m = { pending:["WAITING FOR DRIVER","status-pending"], accepted:["DRIVER ACCEPTED","status-accepted"], en_route:["ON THE WAY","status-en_route"] };
+  const m = { pending:["WAITING FOR DRIVER","status-pending"], accepted:["DRIVER ACCEPTED","status-accepted"] };
   const [label, cls] = m[status] || [status.toUpperCase(),"status-pending"];
   return <div className={"status-badge "+cls}><div className="status-blink" style={{width:6,height:6,borderRadius:"50%",background:"currentColor"}} />{label}</div>;
 }
@@ -177,6 +243,7 @@ export default function FindAFiend() {
   const [gps, setGps] = useState(null);
   const [gpsStatus, setGpsStatus] = useState("idle");
   const [city, setCity] = useState("");
+  const [detectedCity, setDetectedCity] = useState(null);
   const [drivers, setDrivers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState("all");
@@ -189,6 +256,7 @@ export default function FindAFiend() {
   const [booking, setBooking] = useState(false);
   const [rideId, setRideId] = useState(null);
   const [rideData, setRideData] = useState(null);
+  const [showRating, setShowRating] = useState(false);
   const [driverOnline, setDriverOnline] = useState(false);
   const [driverProf, setDriverProf] = useState(null);
   const [pendingRide, setPendingRide] = useState(null);
@@ -197,19 +265,27 @@ export default function FindAFiend() {
   const beatRef = useRef(null);
 
   const getGps = useCallback(() => {
-    if (!navigator.geolocation) { setGpsStatus("denied"); setGps({ lat:39.9612, lng:-82.9988 }); return; }
+    if (!navigator.geolocation) { setGpsStatus("denied"); setGps({ lat:42.3314, lng:-83.0458 }); return; }
     setGpsStatus("loading");
     navigator.geolocation.getCurrentPosition(
       async (p) => {
         const { latitude:lat, longitude:lng } = p.coords;
         setGps({ lat, lng }); setGpsStatus("ok");
+        const c = detectCity(lat, lng);
+        if (c) setDetectedCity(c);
         try {
           const r = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`);
           const d = await r.json();
           setCity(d.address?.city || d.address?.town || d.address?.county || "");
         } catch {}
       },
-      () => { setGpsStatus("denied"); setGps({ lat:39.9612, lng:-82.9988 }); }
+      () => {
+        setGpsStatus("denied");
+        // Default: Detroit
+        setGps({ lat:42.3314, lng:-83.0458 });
+        setDetectedCity("detroit");
+        setCity("Detroit");
+      }
     );
   }, []);
 
@@ -226,7 +302,6 @@ export default function FindAFiend() {
 
   useEffect(() => { if (gps && screen === "home") fetchDrivers(gps); }, [gps, screen, fetchDrivers]);
 
-  // Poll ride status
   useEffect(() => {
     if (!rideId) return;
     pollRef.current = setInterval(async () => {
@@ -235,14 +310,14 @@ export default function FindAFiend() {
         const d = await r.json();
         if (d.ride) {
           setRideData(d.ride);
-          if (d.ride.status === "completed" || d.ride.status === "cancelled") clearInterval(pollRef.current);
+          if (d.ride.status === "completed") { clearInterval(pollRef.current); setShowRating(true); }
+          if (d.ride.status === "cancelled") clearInterval(pollRef.current);
         }
       } catch {}
     }, 4000);
     return () => clearInterval(pollRef.current);
   }, [rideId]);
 
-  // Driver heartbeat
   useEffect(() => {
     if (!driverProf) return;
     const beat = async () => {
@@ -291,6 +366,17 @@ export default function FindAFiend() {
     setPendingRide(null);
   };
 
+  const handleShare = () => {
+    const citySlug = detectedCity || "detroit";
+    const url = `${window.location.origin}/share?city=${citySlug}`;
+    if (navigator.share) {
+      navigator.share({ title:"findafiend.com", text:"Cheap rides in the hood. No Uber bs.", url });
+    } else {
+      navigator.clipboard.writeText(url);
+      alert("Link copied!");
+    }
+  };
+
   const filtered = drivers.filter(d => {
     if (filter==="online") return d.online;
     if (filter==="cheap") return d.price<=6;
@@ -299,6 +385,8 @@ export default function FindAFiend() {
   });
 
   const POS = [["30%","65%"],["62%","72%"],["35%","30%"],["70%","35%"],["25%","55%"],["50%","75%"],["20%","40%"],["65%","55%"]];
+
+  const cityLabel = detectedCity === "detroit" ? "DETROIT, MI" : detectedCity === "toledo" ? "TOLEDO, OH" : city ? city.toUpperCase() : "LOCATING...";
 
   // SPLASH
   if (screen === "splash") return (
@@ -310,7 +398,12 @@ export default function FindAFiend() {
           <div className="splash-dot" />
           <div className="splash-title">find<span>a</span>fiend</div>
           <div className="splash-tld">FINDAFIEND.COM</div>
-          <p className="splash-tagline">Community rides for the blocks Uber forgot. Real people. Cash only.</p>
+          {detectedCity && <div className="splash-city">{cityLabel}</div>}
+          <p className="splash-tagline">
+            {detectedCity === "detroit" ? "For the D. Uber don't come everywhere. We do." :
+             detectedCity === "toledo" ? "419 on the move. Real rides, real cheap." :
+             "Community rides for the blocks Uber forgot. Cash only."}
+          </p>
         </div>
         <div className="splash-stats">
           <div className="splash-stat"><span className="splash-stat-num">$5</span><span className="splash-stat-label">Avg Ride</span></div>
@@ -320,25 +413,26 @@ export default function FindAFiend() {
         <div className="splash-actions">
           <button className="btn-primary" onClick={() => { setMode("rider"); setScreen("home"); getGps(); }}>I NEED A RIDE</button>
           <button className="btn-secondary" onClick={() => { setMode("driver"); setScreen("register"); getGps(); }}>I GOT A CAR — LET'S GET IT</button>
+          <button onClick={handleShare} style={{padding:"12px",background:"transparent",border:"1px solid rgba(242,237,228,0.06)",borderRadius:2,color:"var(--cream2)",fontFamily:"Space Mono",fontSize:10,letterSpacing:"0.08em",cursor:"pointer"}}>
+            📲 SHARE WITH YOUR PEOPLE
+          </button>
         </div>
       </div>
     </div></>
   );
 
-  // DRIVER REGISTRATION
   if (screen === "register") return (
     <><style>{S}</style>
     <div className="app">
       <div className="topbar">
         <div className="topbar-logo" onClick={() => setScreen("splash")}>find<span>a</span>fiend</div>
-        <div style={{fontFamily:"Space Mono",monospace,fontSize:10,color:"var(--cream2)",letterSpacing:"0.08em"}}>DRIVER SIGNUP</div>
-        <div className="topbar-loc">{gpsStatus==="ok" ? <><div className="loc-dot"/>GPS OK</> : "NO GPS"}</div>
+        <div style={{fontFamily:"Space Mono",fontSize:10,color:"var(--cream2)",letterSpacing:"0.08em"}}>DRIVER SIGNUP</div>
+        <div className="topbar-loc">{gpsStatus==="ok"?<><div className="loc-dot"/>GPS OK</>:"NO GPS"}</div>
       </div>
       <RegForm gps={gps} gpsStatus={gpsStatus} onSuccess={(p) => { setDriverProf(p); setMode("driver"); setScreen("home"); }} onBack={() => setScreen("splash")} />
     </div></>
   );
 
-  // TRACKING
   if (screen === "tracking" && rideData) return (
     <><style>{S}</style>
     <div className="app">
@@ -348,8 +442,8 @@ export default function FindAFiend() {
       </div>
       <div className="confirm-screen">
         <div className="confirm-body">
-          <div style={{fontSize:48,marginBottom:20}}>{rideData.status==="pending"?"⏳":rideData.status==="completed"?"✅":"🚗"}</div>
-          <div className="confirm-title">{rideData.status==="pending"?"WAITING ON FIEND":rideData.status==="accepted"?"FIEND IS COMING":"HEADING YOUR WAY"}</div>
+          <div style={{fontSize:48,marginBottom:20}}>{rideData.status==="pending"?"⏳":"🚗"}</div>
+          <div className="confirm-title">{rideData.status==="pending"?"WAITING ON FIEND":"FIEND IS COMING"}</div>
           <div className="confirm-sub">{rideData.status==="pending"?`Sent to ${rideData.driverName}. Hang tight.`:`${rideData.driverName} accepted. Watch for the ${rideData.driverCar}.`}</div>
 
           {(rideData.status==="accepted"||rideData.status==="en_route") && (
@@ -366,6 +460,10 @@ export default function FindAFiend() {
             </div>
           )}
 
+          {showRating && (
+            <RatingWidget rideId={rideId} driverName={rideData.driverName} onDone={() => setShowRating(false)} />
+          )}
+
           <div className="confirm-card">
             <div className="confirm-row"><span className="confirm-row-label">DRIVER</span><span className="confirm-row-val">{rideData.driverName}</span></div>
             <div className="confirm-row"><span className="confirm-row-label">CAR</span><span className="confirm-row-val">{rideData.driverCar}</span></div>
@@ -376,9 +474,13 @@ export default function FindAFiend() {
           </div>
 
           <div style={{fontFamily:"Space Mono",fontSize:10,color:"var(--cream2)",lineHeight:1.8,letterSpacing:"0.06em",textAlign:"center",background:"rgba(232,98,42,0.06)",border:"1px solid rgba(232,98,42,0.2)",padding:"16px",borderRadius:"2px",width:"100%"}}>
-            ⚠ CASH ONLY · PAY ON ARRIVAL<br/>Verify plate before getting in.<br/>Trust your gut. Stay safe.
+            ⚠ CASH ONLY · PAY ON ARRIVAL<br/>Verify plate before getting in. Trust your gut.
           </div>
-          <button className="btn-secondary" style={{marginTop:20,maxWidth:300}} onClick={() => { setScreen("home"); setRideId(null); setRideData(null); }}>← BACK TO MAP</button>
+
+          <div style={{display:"flex",gap:12,marginTop:16,width:"100%"}}>
+            <button className="btn-secondary" style={{flex:1}} onClick={() => { setScreen("home"); setRideId(null); setRideData(null); }}>← BACK</button>
+            <button onClick={handleShare} style={{flex:1,padding:14,background:"transparent",border:"1px solid rgba(242,237,228,0.1)",borderRadius:2,color:"var(--cream2)",fontFamily:"Space Mono",fontSize:10,letterSpacing:"0.06em",cursor:"pointer"}}>📲 SHARE</button>
+          </div>
         </div>
       </div>
     </div></>
@@ -398,7 +500,6 @@ export default function FindAFiend() {
       </div>
 
       {gpsStatus==="loading" && <div className="gps-banner"><div className="gps-spinner"/>DETECTING YOUR LOCATION...</div>}
-      {gpsStatus==="denied" && <div className="gps-banner" style={{color:"var(--cream2)"}}>📍 Default location — enable GPS for accurate results</div>}
 
       <div className="map-strip">
         <div className="map-grid"/>
@@ -415,7 +516,7 @@ export default function FindAFiend() {
             style={{top:POS[i%8][0],left:POS[i%8][1],background:COLORS[i%10]}}
             onClick={() => { setSel(d); setShowModal(true); }} />
         ))}
-        {city && <div className="map-city">📍 {city}</div>}
+        {cityLabel && <div className="map-city">📍 {cityLabel}</div>}
         <div className="map-label">{loading?"...":drivers.filter(d=>d.online).length} FIENDS · 100 MI</div>
       </div>
 
@@ -425,11 +526,18 @@ export default function FindAFiend() {
             <div className="section-title">FIENDS NEARBY</div>
             <div className="section-count">{loading?"LOADING...":drivers.filter(d=>d.online).length+" ONLINE"}</div>
           </div>
+
+          <div className="share-bar">
+            <button className="share-btn" onClick={handleShare}>📲 SHARE WITH YOUR HOOD</button>
+            <button className="share-btn" onClick={() => window.open(`/share?city=${detectedCity||"detroit"}`, "_blank")}>🌐 CITY PAGE</button>
+          </div>
+
           <div className="filters">
             {[["all","ALL"],["online","🟢 ONLINE"],["cheap","💸 CHEAPEST"],["close","📍 CLOSEST"]].map(([v,l]) => (
               <button key={v} className={"filter-chip "+(filter===v?"active":"")} onClick={() => setFilter(v)}>{l}</button>
             ))}
           </div>
+
           <div className="driver-list">
             {filtered.length===0 && !loading && (
               <div className="empty-state">
@@ -497,10 +605,10 @@ export default function FindAFiend() {
                 <div className="request-detail">
                   PICKUP: {pendingRide.pickup}<br/>
                   DROP: {pendingRide.destination}<br/>
-                  {pendingRide.riderPhone && <>RIDER PHONE: {pendingRide.riderPhone}</>}
+                  {pendingRide.riderPhone && <>PHONE: {pendingRide.riderPhone}</>}
                 </div>
                 {pendingRide.status==="accepted"
-                  ? <div style={{fontFamily:"Space Mono",fontSize:11,color:"#27AE60",letterSpacing:"0.08em",padding:"10px 0"}}>✓ YOU ACCEPTED — GO PICK THEM UP</div>
+                  ? <div style={{fontFamily:"Space Mono",fontSize:11,color:"#27AE60",letterSpacing:"0.08em",padding:"10px 0"}}>✓ ACCEPTED — GO PICK THEM UP</div>
                   : <div className="request-actions">
                       <button className="btn-accept" onClick={handleAccept}>✓ ACCEPT</button>
                       <button className="btn-decline" onClick={handleDecline}>SKIP</button>
@@ -540,29 +648,13 @@ export default function FindAFiend() {
               <div className="modal-info-chip"><div className="modal-chip-val">{sel.distance} mi</div><div className="modal-chip-label">AWAY</div></div>
               <div className="modal-info-chip"><div className="modal-chip-val" style={{color:"#27AE60"}}>LIVE</div><div className="modal-chip-label">STATUS</div></div>
             </div>
-            <div className="modal-field">
-              <span className="modal-label">Your Name (optional)</span>
-              <input className="modal-input" placeholder="What to call you..." value={rName} onChange={e=>setRName(e.target.value)}/>
-            </div>
-            <div className="modal-field">
-              <span className="modal-label">Your Phone (driver needs to reach you)</span>
-              <input className="modal-input" type="tel" placeholder="614-555-0100" value={rPhone} onChange={e=>setRPhone(e.target.value)}/>
-            </div>
-            <div className="modal-field">
-              <span className="modal-label">Pickup — be specific</span>
-              <input className="modal-input" placeholder="Corner of MLK + Broad, brown house..." value={pickup} onChange={e=>setPickup(e.target.value)}/>
-            </div>
-            <div className="modal-field">
-              <span className="modal-label">Where You Going?</span>
-              <input className="modal-input" placeholder="Eastland Mall, Downtown Transit..." value={dest} onChange={e=>setDest(e.target.value)}/>
-            </div>
-            <div className="modal-warning">
-              💬 Tags: {(sel.tags||[]).join(" · ")||"none"}<br/>
-              ⚠ Pay <strong>${sel.price} CASH</strong> directly to driver on arrival.<br/>
-              Driver contact revealed after they accept.
-            </div>
+            <div className="modal-field"><span className="modal-label">Your Name (optional)</span><input className="modal-input" placeholder="What to call you..." value={rName} onChange={e=>setRName(e.target.value)}/></div>
+            <div className="modal-field"><span className="modal-label">Your Phone</span><input className="modal-input" type="tel" placeholder="313-555-0100" value={rPhone} onChange={e=>setRPhone(e.target.value)}/></div>
+            <div className="modal-field"><span className="modal-label">Pickup — be specific</span><input className="modal-input" placeholder="Corner of MLK + Broad..." value={pickup} onChange={e=>setPickup(e.target.value)}/></div>
+            <div className="modal-field"><span className="modal-label">Where You Going?</span><input className="modal-input" placeholder="Downtown, Eastland Mall..." value={dest} onChange={e=>setDest(e.target.value)}/></div>
+            <div className="modal-warning">💬 Tags: {(sel.tags||[]).join(" · ")||"none"}<br/>⚠ Pay <strong>${sel.price} CASH</strong> on arrival. Contact revealed after accept.</div>
             <button className="btn-primary" disabled={!pickup||!dest||booking} onClick={handleBook}>
-              {booking?"SENDING REQUEST...":"REQUEST "+sel.name.toUpperCase()+" — $"+sel.price+" CASH"}
+              {booking?"SENDING...":"REQUEST "+sel.name.toUpperCase()+" — $"+sel.price+" CASH"}
             </button>
           </div>
         </div>
@@ -571,7 +663,6 @@ export default function FindAFiend() {
   );
 }
 
-// ── REGISTRATION FORM ──────────────────────────────────────────────────────
 function RegForm({ gps, gpsStatus, onSuccess, onBack }) {
   const [f, setF] = useState({ name:"", car:"", phone:"", cashapp:"", price:"7" });
   const [tags, setTags] = useState([]);
@@ -581,8 +672,8 @@ function RegForm({ gps, gpsStatus, onSuccess, onBack }) {
   const toggleTag = t => setTags(ts => ts.includes(t) ? ts.filter(x=>x!==t) : [...ts,t]);
 
   const submit = async () => {
-    if (!f.name||!f.car||!f.phone) { setErr("Name, car, and phone are required."); return; }
-    if (!gps) { setErr("Location required. Please allow GPS access."); return; }
+    if (!f.name||!f.car||!f.phone) { setErr("Name, car, and phone required."); return; }
+    if (!gps) { setErr("Location required."); return; }
     setLoading(true); setErr("");
     try {
       const r = await fetch("/api/drivers/register", {
@@ -601,12 +692,12 @@ function RegForm({ gps, gpsStatus, onSuccess, onBack }) {
       <div className="reg-title">JOIN AS A DRIVER</div>
       <div className="reg-sub">Your name and car are public. Phone shared only after a rider books you.</div>
       <div className="reg-section">YOUR INFO</div>
-      <div className="modal-field"><span className="modal-label">First Name (shown to riders)</span><input className="modal-input" placeholder="Big Dre, Mookie, Keisha..." value={f.name} onChange={set("name")}/></div>
-      <div className="modal-field"><span className="modal-label">Phone (private — shared after booking)</span><input className="modal-input" type="tel" placeholder="614-555-0147" value={f.phone} onChange={set("phone")}/></div>
+      <div className="modal-field"><span className="modal-label">First Name</span><input className="modal-input" placeholder="Big Dre, Mookie, Keisha..." value={f.name} onChange={set("name")}/></div>
+      <div className="modal-field"><span className="modal-label">Phone (private — shared after booking)</span><input className="modal-input" type="tel" placeholder="313-555-0147" value={f.phone} onChange={set("phone")}/></div>
       <div className="modal-field"><span className="modal-label">Cash App $Cashtag (optional)</span><input className="modal-input" placeholder="$YourTag" value={f.cashapp} onChange={set("cashapp")}/></div>
       <div className="reg-section">YOUR CAR</div>
       <div className="modal-field"><span className="modal-label">Year, Make & Model</span><input className="modal-input" placeholder="2009 Chevy Impala..." value={f.car} onChange={set("car")}/></div>
-      <div className="modal-field"><span className="modal-label">Your flat price per ride ($)</span><input className="modal-input" type="number" min="1" max="50" value={f.price} onChange={set("price")}/></div>
+      <div className="modal-field"><span className="modal-label">Flat price per ride ($)</span><input className="modal-input" type="number" min="1" max="50" value={f.price} onChange={set("price")}/></div>
       <div className="reg-section">ABOUT YOUR RIDE</div>
       <div className="tag-grid">{TAGS.map(t => <button key={t} className={"tag-option "+(tags.includes(t)?"selected":"")} onClick={() => toggleTag(t)}>{t}</button>)}</div>
       {gpsStatus==="loading" && <div style={{fontFamily:"Space Mono",fontSize:10,color:"var(--ember)",letterSpacing:"0.08em",marginTop:20}}>📡 Getting your location...</div>}
